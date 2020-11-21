@@ -1,0 +1,6 @@
+*.o
+master
+server
+attack
+.depend
+ro_memory
