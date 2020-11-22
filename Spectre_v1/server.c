@@ -12,10 +12,12 @@
 #include "spectre.h"
 
 // Buffer to attack
-uint8_t *array;
+// uint8_t *array;
+__attribute__((section(TARGET_SECTION), aligned(ARRSIZE)))
+    static const uint8_t array[ARRSIZE] = {'h', 'u', 'i'} ;
 
 // Some data
-int     size   __attribute__((aligned(64))) = REQUEST_SIZE - 1;
+int     size     __attribute__((aligned(64))) = REQUEST_SIZE - 1;
 uint8_t nums[64] __attribute__((aligned(64)));
 
 // Password to be stolen
@@ -36,7 +38,9 @@ int main(int argc, char *argv[])
 {
     for (size_t i = 0; i < sizeof(nums); i++)
         nums[i] = i + 1;
-    printf("size = %p, nums = %p, secret = %p\n", &size, &nums[0], &secret[0]);
+    printf("server pid = %d\n", getpid());
+    printf("size = %p, nums = %p, secret = %p\n", &size, &nums[0],
+        &secret[0]);
     // Some general shit
     if (argc < 2)
     {
@@ -51,22 +55,23 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    array = mapfile("ro_memory", ARRSIZE);
-    if (!array)
-        return EXIT_FAILURE;
+    // Read array in memory...
+    for (int i = 0; i < 256; i++)
+        state &= array[i*4096 + OFFSET];
 
     // The hook to make it all look serious
     printf("Password, please: ");
     fgets((char*)secret, sizeof(secret), stdin);
-    // Temporal solution...
-    strncpy((char*)(nums + REQUEST_SIZE), (char*)secret,
-        sizeof(nums) - REQUEST_SIZE);
+    for (int i = 0; i < 8; i++)
+        nums[size + i] = secret[i];
+//    for (size_t i = 0; i < sizeof(nums); i++)
+//        printf("nums[%2lu] = %d\n", i, nums[i]);
 
     // Server starts
     int sock = setup_server(port);
     if (sock < 0)
     {
-        munmap(array, ARRSIZE);
+        // munmap(array, ARRSIZE);
         return EXIT_FAILURE;
     }
 
@@ -78,7 +83,7 @@ int main(int argc, char *argv[])
         if (client < 0)
         {
             perror("accept");
-            munmap(array, ARRSIZE);
+            // munmap(array, ARRSIZE);
             return EXIT_FAILURE;
         }
         printf("Somebody connected...\n");
@@ -89,7 +94,7 @@ int main(int argc, char *argv[])
         close(client);
     }
 
-    munmap(array, ARRSIZE);
+    // munmap(array, ARRSIZE);
     return EXIT_SUCCESS;
 }
 
@@ -113,15 +118,11 @@ int serve(int client)
     for (int i = 0; i < size; i++)
         fuck_up(requests[i]);
 
-//    for (int i = 0; i < size; i++)
-//        _mm_clflush(&array[i*4096 + OFFSET]);
     _mm_clflush(&size);
-
     fuck_up(requests[REQUEST_SIZE - 1]);
 
     // And return results
-    requests[REQUEST_SIZE - 1] = state;
-    ret = send(client, requests, sizeof(requests), 0);
+    ret = send(client, &state, sizeof(state), 0);
     if (ret < 0)
     {
         perror("send");

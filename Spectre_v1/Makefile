@@ -1,6 +1,6 @@
 
 CC      := gcc
-CFLAGS  := -no-pie -Wall -Wextra -DCACHE_THRESHOLD=200
+CFLAGS  := -no-pie -Wall -Wextra
 
 memory  := ro_memory
 depend  := .depend

@@ -4,9 +4,9 @@
 
 #define OFFSET  (1024)
 #define ARRSIZE (256*4096)
+#define TARGET_SECTION (".FUCKDICKBITCH")
 
 #define CONTROL_PORT (10001)
-
 #define REQUEST_SIZE (50)
 
 #endif // SPECTRE_H_INCLUDED

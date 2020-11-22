@@ -54,12 +54,22 @@ int main(int argc, char *argv[])
             printf("\n");
             break;
         }
-        requests[REQUEST_SIZE - 1] = offset;
 
-        send(server, requests, sizeof(requests), 0);
-        send(slave,  requests, sizeof(requests), 0);
-        // Just prevent internal buffers fillings
-        recv(server, requests, sizeof(requests), 0);
+        int found = 0;
+        int attempts = 0;
+        while (!found && attempts++ < 30)
+        {
+            for (size_t i = 0; i < REQUEST_SIZE; i++)
+                requests[i] = 0;
+            requests[REQUEST_SIZE - 1] = offset;
+            int tmp;
+
+            send(server, requests, sizeof(requests), 0);
+            send(slave,  requests, sizeof(requests), 0);
+            recv(server, &tmp,   sizeof(tmp), 0);
+            recv(slave,  &found, sizeof(found), 0);
+            usleep(50000);
+        }
     }
 
     close(server);

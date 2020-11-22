@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <elf.h>
 
 #include "spectre.h"
 
@@ -26,18 +28,18 @@ int read_port(const char *p)
 }
 
 static uint8_t dummy;
-uint8_t *mapfile(const char *mem, size_t size)
+uint8_t *mapfile(const char *file, off_t offset, size_t length)
 {
-    assert(mem);
+    assert(file);
 
-    int fd = open(mem, O_RDONLY);
+    int fd = open(file, O_RDONLY);
     if (!fd)
     {
         perror("open");
         return NULL;
     }
 
-    uint8_t *array = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+    uint8_t *array = mmap(NULL, length, PROT_READ, MAP_SHARED, fd, offset);
     if (array == MAP_FAILED)
     {
         perror("mmap");
@@ -46,9 +48,133 @@ uint8_t *mapfile(const char *mem, size_t size)
     }
     close(fd);
 
-    for (size_t i = 0; i < size; i++)
+    // Gentle touch
+    for (size_t i = 0; i < length; i++)
         dummy &= array[i];
 
+    return array;
+}
+
+#define ENSURE(cond)                        \
+    do {                                    \
+        if ((cond))                         \
+        {                                   \
+            printf("[OK]\n");               \
+        }                                   \
+        else                                \
+        {                                   \
+            printf("[FAILED]\nAborting\n"); \
+            return -1;                      \
+        }                                   \
+    } while (0)
+
+ssize_t secoffset(void *mem, const char *secname, size_t *secsize)
+{
+    assert(mem);
+    assert(secname);
+
+    // Check file format
+    printf("Checking file format  - ELF expected   ");
+    Elf64_Ehdr eh = *(Elf64_Ehdr*)mem;
+    ENSURE(eh.e_ident[0] == 0x7f && eh.e_ident[1] == 'E' &&
+           eh.e_ident[2] == 'L'  && eh.e_ident[3] == 'F');
+
+    // Check version
+    printf("Checking architecture - 64bit expected ");
+    ENSURE(eh.e_ident[4] == ELFCLASS64);
+
+    // Ensure symbols were not stripped + not a special format
+    printf("Checking section header table index    ");
+    ENSURE(eh.e_shstrndx != SHN_XINDEX);
+
+    printf("Quick report:\n");
+    printf("e_shoff     = %lu\n", eh.e_shoff);
+    printf("e_shentsize = %d\n",  eh.e_shentsize);
+    printf("e_shstrndx  = %d\n",  eh.e_shstrndx);
+    printf("e_shnum     = %d\n",  eh.e_shnum);
+
+    Elf64_Shdr sh = *(Elf64_Shdr*)(mem + eh.e_shoff +
+        eh.e_shentsize*eh.e_shstrndx);
+    printf("Section header table offset = %lu\n", sh.sh_offset);
+
+    // Find target section
+    printf("Looking for target section             ");
+    int secnum = 0;
+    int found  = 0;
+    Elf64_Shdr target;
+    while (secnum <= eh.e_shnum)
+    {
+        target = *(Elf64_Shdr*)(mem + eh.e_shoff + eh.e_shentsize*secnum++);
+        if (!strcmp(TARGET_SECTION, (mem + sh.sh_offset + target.sh_name)))
+        {
+            found = 1;
+            break;
+        }
+    }
+    ENSURE(found);
+
+    printf("Section name  = %s\n",
+        (char*)(mem + sh.sh_offset + target.sh_name));
+    printf("Section size  = %lu\n", target.sh_size);
+    printf("Section align = %lu\n", target.sh_addralign);
+    printf("Map %p bytes from %p offset\n", (void*)target.sh_size,
+        (void*)target.sh_offset);
+
+    if (secsize)
+        *secsize = target.sh_size;
+    return target.sh_offset;
+}
+
+#undef ENSURE
+
+uint8_t *mapsection(const char *file, const char *secname, size_t secsize)
+{
+    assert(file);
+    assert(secname);
+
+    int err;
+    int fd = open(file, O_RDONLY);
+    if (!fd)
+    {
+        perror("open");
+        return NULL;
+    }
+    struct stat st;
+    err = fstat(fd, &st);
+    if (err < 0)
+    {
+        perror("fstat");
+        close(fd);
+        return NULL;
+    }
+
+    uint8_t *filemap = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (filemap == MAP_FAILED)
+    {
+        perror("mmap");
+        close(fd);
+        return NULL;
+    }
+
+    ssize_t offt = secoffset(filemap, TARGET_SECTION, NULL);
+    if (offt < 0)
+    {
+        munmap(filemap, st.st_size);
+        close(fd);
+        return NULL;
+    }
+
+    uint8_t *array = mmap(NULL, secsize, PROT_READ, MAP_SHARED, fd, offt);
+    if (array == MAP_FAILED)
+    {
+        perror("mmap");
+        munmap(filemap, st.st_size);
+        close(fd);
+        return NULL;
+    }
+
+    munmap(filemap, st.st_size);
+    close(fd);
     return array;
 }
 
