@@ -30,6 +30,8 @@ int main(int argc, char *argv[])
     if (!array)
         return EXIT_FAILURE;
 
+    uint64_t threshold = calculate_threshold(1000000);
+
     // Read the array in memory
     for (int i = 0; i < 256; i++)
         x &= array[i*4096 + OFFSET];
@@ -73,11 +75,12 @@ int main(int argc, char *argv[])
             finish = __rdtscp(&junk);
 
             uint64_t duration = finish - start;
-            if (duration < 200)
+            // if (duration < 200)
+            if (duration < threshold)
             {
                 // printf("%3d : %lu ", i, duration);
                 // printf("%c\n", (isalnum(i) ? i : '?'));
-                sym = (isalpha(i) ? i : '?');
+                sym = (isalnum(i) ? i : '?');
                 idx = i;
                 found = 1;
             }

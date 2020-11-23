@@ -64,8 +64,6 @@ int main(int argc, char *argv[])
     fgets((char*)secret, sizeof(secret), stdin);
     for (int i = 0; i < 8; i++)
         nums[size + i] = secret[i];
-//    for (size_t i = 0; i < sizeof(nums); i++)
-//        printf("nums[%2lu] = %d\n", i, nums[i]);
 
     // Server starts
     int sock = setup_server(port);

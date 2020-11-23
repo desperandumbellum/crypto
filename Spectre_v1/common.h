@@ -20,5 +20,7 @@ uint8_t *mapsection(const char *file, const char *secname, size_t secsize);
 int setup_client(const char *addr, int port);
 int setup_server(int port);
 
+uint64_t calculate_threshold(int runs);
+
 #endif // COMMON_H_INCLUDED
 

@@ -11,6 +11,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <elf.h>
+#include <emmintrin.h>
+#include <x86intrin.h>
 
 #include "spectre.h"
 
@@ -88,10 +90,10 @@ ssize_t secoffset(void *mem, const char *secname, size_t *secsize)
     ENSURE(eh.e_shstrndx != SHN_XINDEX);
 
     printf("Quick report:\n");
-    printf("e_shoff     = %lu\n", eh.e_shoff);
-    printf("e_shentsize = %d\n",  eh.e_shentsize);
-    printf("e_shstrndx  = %d\n",  eh.e_shstrndx);
-    printf("e_shnum     = %d\n",  eh.e_shnum);
+    printf("e_shoff       = %lu\n", eh.e_shoff);
+    printf("e_shentsize   = %d\n",  eh.e_shentsize);
+    printf("e_shstrndx    = %d\n",  eh.e_shstrndx);
+    printf("e_shnum       = %d\n",  eh.e_shnum);
 
     Elf64_Shdr sh = *(Elf64_Shdr*)(mem + eh.e_shoff +
         eh.e_shentsize*eh.e_shstrndx);
@@ -259,3 +261,48 @@ int setup_server(int port)
 
     return sock;
 }
+
+uint64_t calculate_threshold(int runs)
+{
+    assert(runs > 0);
+
+    uint8_t  target = 0;
+    uint64_t cumulative_time = 0;
+
+    printf("Checking cache hit time,  %d runs...\n", runs);
+    dummy ^= target;
+    cumulative_time = 0;
+    for (int i = 0; i < runs; i++)
+    {
+        unsigned junk = 0;
+        uint64_t start, finish;
+        start  = __rdtscp(&junk);
+        dummy ^= target;
+        finish = __rdtscp(&junk);
+        cumulative_time += finish - start;
+    }
+    int time_hit = cumulative_time / runs;
+    printf("Cahce hit time:  %3d cycles\n", time_hit);
+
+    printf("Checking cache miss time, %d runs...\n", runs);
+    cumulative_time = 0;
+    for (int i = 0; i < runs; i++)
+    {
+        unsigned junk = 0;
+        uint64_t start, finish;
+        _mm_clflush(&target);
+        start  = __rdtscp(&junk);
+        dummy ^= target;
+        finish = __rdtscp(&junk);
+        _mm_lfence();   // Intel and AMD recommendation
+        cumulative_time += finish - start;
+    }
+    int time_miss = cumulative_time / runs;
+    printf("Cahce miss time: %3d cycles\n", time_miss);
+    
+    uint64_t threshold = (time_hit + time_miss) / 3;
+    printf("Using threshold: %3lu cycles\n", threshold);
+
+    return threshold;
+}
+
