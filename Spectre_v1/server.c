@@ -12,7 +12,6 @@
 #include "spectre.h"
 
 // Buffer to attack
-// uint8_t *array;
 __attribute__((section(TARGET_SECTION), aligned(ARRSIZE)))
     static const uint8_t array[ARRSIZE] = {'h', 'u', 'i'} ;
 
@@ -21,8 +20,7 @@ int     size     __attribute__((aligned(64))) = REQUEST_SIZE - 1;
 uint8_t nums[64] __attribute__((aligned(64)));
 
 // Password to be stolen
-uint8_t secret[16];
-
+uint8_t secret[64];
 uint8_t state;
 
 // Spectre
@@ -38,6 +36,7 @@ int main(int argc, char *argv[])
 {
     for (size_t i = 0; i < sizeof(nums); i++)
         nums[i] = i + 1;
+
     printf("server pid = %d\n", getpid());
     printf("size = %p, nums = %p, secret = %p\n", &size, &nums[0],
         &secret[0]);
@@ -47,6 +46,10 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s port\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    int err = set_cpu(0);
+    if (err < 0)
+        return EXIT_FAILURE;
 
     int port = read_port(argv[1]);
     if (port < 0)

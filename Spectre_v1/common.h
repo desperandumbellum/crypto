@@ -17,6 +17,9 @@ uint8_t *mapfile(const char *file, off_t offset, size_t length);
  */
 ssize_t secoffset(void *mem, const char *secname, size_t *secsize);
 uint8_t *mapsection(const char *file, const char *secname, size_t secsize);
+
+int set_cpu(int cpu);
+
 int setup_client(const char *addr, int port);
 int setup_server(int port);
 

@@ -1,5 +1,8 @@
 
+#define _GNU_SOURCE
 #include "common.h"
+
+#include <sched.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -178,6 +181,24 @@ uint8_t *mapsection(const char *file, const char *secname, size_t secsize)
     munmap(filemap, st.st_size);
     close(fd);
     return array;
+}
+
+int set_cpu(int cpu)
+{
+    assert(cpu >= 0);
+
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(cpu, &cpuset);
+
+    int err = sched_setaffinity(getpid(), sizeof(cpuset), &cpuset);
+    if (err < 0)
+    {
+        perror("sched_setaffinity");
+        return -1;
+    }
+
+    return 0;
 }
 
 int setup_client(const char *addr, int port)

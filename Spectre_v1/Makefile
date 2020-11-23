@@ -2,7 +2,6 @@
 CC      := gcc
 CFLAGS  := -no-pie -Wall -Wextra
 
-memory  := ro_memory
 depend  := .depend
 
 # Holy fuck... AHAHAHA IT WORKS!!!
@@ -39,13 +38,9 @@ release: CFLAGS += -DNDEBUG
 .PHONY: debug release
 debug release: $(bin-all) $(memory)
 
-$(memory):
-	dd if=/dev/zero of=$@ count=2048 2> /dev/null
-
 .PHONY: clean
 clean:
 	$(RM) $(obj-all)
 	$(RM) $(bin-all)
 	$(RM) $(depend)
-	$(RM) $(memory)
 

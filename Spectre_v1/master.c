@@ -18,6 +18,10 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s port\n", argv[0]);
         return EXIT_FAILURE;
     }
+    
+    int err = set_cpu(1);
+    if (err < 0)
+        return EXIT_FAILURE;
 
     int port = read_port(argv[1]);
     if (port < 0)

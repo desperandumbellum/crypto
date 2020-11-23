@@ -26,6 +26,10 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    err = set_cpu(0);
+    if (err < 0)
+        return EXIT_FAILURE;
+
     uint8_t *array = mapsection(argv[1], TARGET_SECTION, ARRSIZE);
     if (!array)
         return EXIT_FAILURE;
@@ -46,7 +50,7 @@ int main(int argc, char *argv[])
     }
 
     int master = accept(sock, NULL, NULL);
-    if (master  < 0)
+    if (master < 0)
     {
         perror("accept");
         munmap(array, ARRSIZE);
@@ -60,7 +64,7 @@ int main(int argc, char *argv[])
 
         uint8_t requests[REQUEST_SIZE] = {};
         err = recv(master, requests, sizeof(requests), 0);
-        usleep(100);
+        usleep(5000);
 
         int found = 0;
         char sym  = '\0';
