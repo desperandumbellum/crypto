@@ -291,17 +291,12 @@ uint64_t calculate_threshold(int runs)
     uint64_t cumulative_time = 0;
 
     printf("Checking cache hit time,  %d runs...\n", runs);
-    dummy ^= target;
     cumulative_time = 0;
+    // Loading 'target' into cache
+    dummy ^= target;
     for (int i = 0; i < runs; i++)
-    {
-        unsigned junk = 0;
-        uint64_t start, finish;
-        start  = __rdtscp(&junk);
-        dummy ^= target;
-        finish = __rdtscp(&junk);
-        cumulative_time += finish - start;
-    }
+        cumulative_time += measure_access_time(&target);
+
     int time_hit = cumulative_time / runs;
     printf("Cahce hit time:  %3d cycles\n", time_hit);
 
@@ -309,14 +304,9 @@ uint64_t calculate_threshold(int runs)
     cumulative_time = 0;
     for (int i = 0; i < runs; i++)
     {
-        unsigned junk = 0;
-        uint64_t start, finish;
         _mm_clflush(&target);
-        start  = __rdtscp(&junk);
-        dummy ^= target;
-        finish = __rdtscp(&junk);
-        _mm_lfence();   // Intel and AMD recommendation
-        cumulative_time += finish - start;
+        cumulative_time += measure_access_time(&target);
+        // _mm_lfence();
     }
     int time_miss = cumulative_time / runs;
     printf("Cahce miss time: %3d cycles\n", time_miss);
@@ -325,5 +315,18 @@ uint64_t calculate_threshold(int runs)
     printf("Using threshold: %3lu cycles\n", threshold);
 
     return threshold;
+}
+
+uint64_t measure_access_time(uint8_t *target)
+{
+    assert(target);
+
+    unsigned junk = 0;
+
+    uint64_t start  = __rdtscp(&junk);
+    dummy ^= *target;
+    uint64_t finish = __rdtscp(&junk);
+
+    return finish - start;
 }
 

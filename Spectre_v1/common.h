@@ -24,6 +24,7 @@ int setup_client(const char *addr, int port);
 int setup_server(int port);
 
 uint64_t calculate_threshold(int runs);
+uint64_t measure_access_time(uint8_t *target);
 
 #endif // COMMON_H_INCLUDED
 
