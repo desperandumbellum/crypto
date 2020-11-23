@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
         int offset;
 
         printf("Enter offset: ");
-        int ret = scanf("%d", &offset);
+        int ret = scanf("%i", &offset);
         if (ret == EOF)
         {
             printf("\n");
