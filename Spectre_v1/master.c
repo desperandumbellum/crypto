@@ -10,8 +10,18 @@
 #include "common.h"
 #include "spectre.h"
 
-int input();
-int attack(int victim, int slave, int offset);
+/*
+ * Asks user for an int offset until succeeded or EOF met and stores
+ *  the result in 'offset'.
+ * Returns whether input is valud.
+ */
+static int input(int *offset);
+/*
+ * Sends requests to 'victim' and 'slave' to trigger an attack on a
+ *  byte located 'offset' from the reference address.
+ * Returns wheter the attack succeded.
+ */
+static int attack(int victim, int slave, int offset);
 
 int main(int argc, char *argv[])
 {
@@ -52,8 +62,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         int offset;
-        int input_valid = input(&offset);
-        if (!input_valid)
+        if (!input(&offset))
             break;
 
         int found = 0;

@@ -14,6 +14,10 @@
 #include "common.h"
 #include "spectre.h"
 
+/*
+ * Global variable to save 'useless' statements from being
+ * compiled out.
+ */
 int x;
 
 int main(int argc, char *argv[])

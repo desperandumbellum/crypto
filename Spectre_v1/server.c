@@ -11,25 +11,31 @@
 #include "common.h"
 #include "spectre.h"
 
-// Buffer to attack
+// Buffer to perform timing attack
 __attribute__((section(TARGET_SECTION), aligned(ARRSIZE)))
     static const uint8_t array[ARRSIZE] = {'h', 'u', 'i'} ;
 
-// Some data
+// Reference address and the guarding size
 int     size     __attribute__((aligned(64))) = REQUEST_SIZE - 1;
 uint8_t nums[64] __attribute__((aligned(64)));
 
 // Password to be stolen
 uint8_t secret[64];
+
+// Variable representing some internal state of the server
 uint8_t state;
 
-// Spectre
+// Spectre!
 static void fuck_up(int x)
 {
     if (x < size && x >= 0)
          state = array[nums[x]*4096 + OFFSET];
 }
 
+/*
+ * Serves a client (triggers spectre attack inside).
+ * Returns wheter the cliend has closed the connection.
+ */
 static int serve(int client);
 
 int main(int argc, char *argv[])
