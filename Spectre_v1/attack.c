@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
 
     uint64_t threshold = calculate_threshold(1000000);
 
-    // Read the array in memory
-    for (int i = 0; i < 256; i++)
-        x &= array[i*4096 + OFFSET];
-    for (int i = 0; i < 256; i++)
-        _mm_clflush(&array[i*4096 + OFFSET]);
+//    // Read the array in memory
+//    for (int i = 0; i < 256; i++)
+//        x &= array[i*4096 + OFFSET];
+//    for (int i = 0; i < 256; i++)
+//        _mm_clflush(&array[i*4096 + OFFSET]);
 
     int sock = setup_server(CONTROL_PORT);
     if (sock < 0)

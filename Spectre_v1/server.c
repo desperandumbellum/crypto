@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     printf("server pid = %d\n", getpid());
     printf("size = %p, nums = %p, secret = %p\n", &size, &nums[0],
         &secret[0]);
+
     // Some general shit
     if (argc < 2)
     {
@@ -69,37 +70,33 @@ int main(int argc, char *argv[])
     // Server starts
     int sock = setup_server(port);
     if (sock < 0)
+        return EXIT_FAILURE;
+
+    /*
+     * 'Main loop' - except for the fact that this server only works
+     * with one client and then quits.
+     */
+    printf("Started server on port %s, try to fuck me\n", argv[1]);
+
+    int client = accept(sock, NULL, NULL);
+    if (client < 0)
     {
-        // munmap(array, ARRSIZE);
+        perror("accept");
+        close(sock);
         return EXIT_FAILURE;
     }
+    printf("Client connected, serving...\n");
 
-    // Main loop
-    printf("Started server on port %s, try to fuck me\n", argv[1]);
-    while (1)
-    {
-        int client = accept(sock, NULL, NULL);
-        if (client < 0)
-        {
-            perror("accept");
-            // munmap(array, ARRSIZE);
-            return EXIT_FAILURE;
-        }
-        printf("Somebody connected...\n");
+    // Operation shitstorm has begun...
+    while (serve(client) == 0)
+        ;
+    close(client);
 
-        // Operation shitstorm has begun...
-        while (1)
-            serve(client);
-        close(client);
-    }
-
-    // munmap(array, ARRSIZE);
+    printf("Client done.\n");
+    close(sock);
     return EXIT_SUCCESS;
 }
 
-/*
- * Does not actually check sends and receives properly
- */
 int serve(int client)
 {
     assert(client > 0);
@@ -112,6 +109,8 @@ int serve(int client)
         perror("recv");
         return -1;
     }
+    else if (ret == 0)
+        return 1;
 
     // Do some extremely useful work
     for (int i = 0; i < size; i++)
