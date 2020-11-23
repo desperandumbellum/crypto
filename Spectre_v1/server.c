@@ -26,7 +26,7 @@ uint8_t state;
 // Spectre
 static void fuck_up(int x)
 {
-    if (x < size)
+    if (x < size && x >= 0)
          state = array[nums[x]*4096 + OFFSET];
 }
 
