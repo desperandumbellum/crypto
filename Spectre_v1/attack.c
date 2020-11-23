@@ -61,14 +61,12 @@ int main(int argc, char *argv[])
     err = 1;
     while (err > 0)
     {
-
-        uint8_t requests[REQUEST_SIZE] = {};
+        int requests[REQUEST_SIZE] = {};
         err = recv(master, requests, sizeof(requests), 0);
-        usleep(5000);
+        usleep(100);
 
         int found = 0;
         char sym  = '\0';
-        int  idx  = 0;
         for (int i = 1; i < 200; i++)
         {
             unsigned junk = 0;
@@ -82,14 +80,12 @@ int main(int argc, char *argv[])
             // if (duration < 200)
             if (duration < threshold)
             {
-                // printf("%3d : %lu ", i, duration);
-                // printf("%c\n", (isalnum(i) ? i : '?'));
-                sym = (isalnum(i) ? i : '?');
-                idx = i;
+                sym = (isprint(i) ? i : '?');
                 found = 1;
+                printf("Offset %3d: %c\n", requests[REQUEST_SIZE - 1], sym);
             }
         }
-        printf("Offset %3d: %c (%d)\n", requests[REQUEST_SIZE - 1], sym, idx);
+        // printf("Offset %3d: %c (%d)\n", requests[REQUEST_SIZE - 1], sym, idx);
         err = send(master, &found, sizeof(found), 0);
     }
 

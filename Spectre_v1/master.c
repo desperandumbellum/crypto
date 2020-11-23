@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     printf("Connections set up, let's go!\n");
     while (1)
     {
-        uint8_t requests[REQUEST_SIZE] = {};
+        int requests[REQUEST_SIZE] = {};
         int offset;
 
         printf("Enter offset: ");

@@ -65,8 +65,6 @@ int main(int argc, char *argv[])
     // The hook to make it all look serious
     printf("Password, please: ");
     fgets((char*)secret, sizeof(secret), stdin);
-    for (int i = 0; i < 8; i++)
-        nums[size + i] = secret[i];
 
     // Server starts
     int sock = setup_server(port);
@@ -107,7 +105,7 @@ int serve(int client)
     assert(client > 0);
 
     // Just receiving 11 numbers to check them...
-    uint8_t requests[REQUEST_SIZE];
+    int requests[REQUEST_SIZE];
     int ret = recv(client, requests, sizeof(requests), 0);
     if (ret < 0)
     {
