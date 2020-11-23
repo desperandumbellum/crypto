@@ -139,7 +139,7 @@ uint8_t *mapsection(const char *file, const char *secname, size_t secsize)
 
     int err;
     int fd = open(file, O_RDONLY);
-    if (!fd)
+    if (fd < 0)
     {
         perror("open");
         return NULL;
