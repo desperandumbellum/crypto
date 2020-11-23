@@ -10,6 +10,9 @@
 #include "common.h"
 #include "spectre.h"
 
+int input();
+int attack(int victim, int slave, int offset);
+
 int main(int argc, char *argv[])
 {
     // Some general shit
@@ -48,30 +51,19 @@ int main(int argc, char *argv[])
     printf("Connections set up, let's go!\n");
     while (1)
     {
-        int requests[REQUEST_SIZE] = {};
         int offset;
-
-        printf("Enter offset: ");
-        int ret = scanf("%i", &offset);
-        if (ret == EOF)
-        {
-            printf("\n");
+        int input_valid = input(&offset);
+        if (!input_valid)
             break;
-        }
 
         int found = 0;
         int attempts = 0;
         while (!found && attempts++ < 30)
         {
-            for (size_t i = 0; i < REQUEST_SIZE; i++)
-                requests[i] = 0;
-            requests[REQUEST_SIZE - 1] = offset;
-            int tmp;
-
-            send(server, requests, sizeof(requests), 0);
-            send(slave,  requests, sizeof(requests), 0);
-            recv(server, &tmp,   sizeof(tmp), 0);
-            recv(slave,  &found, sizeof(found), 0);
+            found = attack(server, slave, offset);
+            /*
+             * If search failed, let the slave and the victim stabilize
+             */
             usleep(50000);
         }
     }
@@ -79,5 +71,58 @@ int main(int argc, char *argv[])
     close(server);
     close(slave);
     return EXIT_SUCCESS;
+}
+
+int input(int *offset)
+{
+    assert(offset);
+
+    while (1)
+    {
+        printf("Enter offset: ");
+        int res = scanf("%i", offset);
+        if (res == EOF)
+        {
+            printf("\n");
+            return 0;
+        }
+        else if (res == 1)
+            return 1;
+    
+        /*
+         * Clearing input - not safe but still ok since the only users
+         * are smart enought to not to break it :)
+         */
+        char buf[512];
+        scanf("%s", buf);
+
+        printf("Invalid input, try again\n");
+    }
+    // Never executed
+    return 0;
+}
+
+int attack(int victim, int slave, int offset)
+{
+    assert(victim);
+    assert(slave);
+
+    int requests[REQUEST_SIZE] = {};
+    requests[REQUEST_SIZE - 1] = offset;
+    
+    /*
+     * No error recovery needed here:
+     * 1. If send fails, we are free to die;
+     * 2. If recv fails, it does not matter - we are not interested
+     *    in any results on this side.
+     */
+    int tmp;
+    int found;
+    send(victim, requests, sizeof(requests), 0);
+    send(slave,  requests, sizeof(requests), 0);
+    recv(victim, &tmp,     sizeof(tmp),   0);
+    recv(slave,  &found,   sizeof(found), 0);
+
+    return found;
 }
 
