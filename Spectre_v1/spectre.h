@@ -4,6 +4,7 @@
 
 #define OFFSET  (1024)
 #define ARRSIZE (256*4096)
+#define BYTE_READ_REPEATS (100)
 #define TARGET_SECTION (".FUCKDICKBITCH")
 
 #define CONTROL_PORT (10001)

