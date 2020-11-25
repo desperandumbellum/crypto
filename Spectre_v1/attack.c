@@ -110,7 +110,8 @@ static int read_byte(uint8_t *array, int runs, int master,
         usleep(100);
 
         // Checking byte values
-        for (int i = 1; i < 200; i++)
+        // for (int i = 1; i < 200; i++)
+        for (int i = 1; i < 127; i++)
             if (measure_access_time(&array[i*4096 + OFFSET]) < threshold)
                 hits[i]++;
 
