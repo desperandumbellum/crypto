@@ -4,7 +4,6 @@ CFLAGS  := -no-pie -Wall -Wextra
 
 depend  := .depend
 
-# Holy fuck... AHAHAHA IT WORKS!!!
 define make_progs
 src-$(1) := $(1).c
 obj-$(1) := $(1).o $(obj-common)

@@ -13,7 +13,16 @@
 
 // Buffer to perform timing attack
 __attribute__((section(TARGET_SECTION), aligned(ARRSIZE)))
-    static const uint8_t array[ARRSIZE] = {'h', 'u', 'i'} ;
+    static const uint8_t array[ARRSIZE] = {'h', 'u', 'i',
+                                            [0*4096 + OFFSET] = 0,
+                                            [1*4096 + OFFSET] = 1,
+                                            [2*4096 + OFFSET] = 2,
+                                            [3*4096 + OFFSET] = 3,
+                                            [4*4096 + OFFSET] = 4,
+                                            [5*4096 + OFFSET] = 5,
+                                            [6*4096 + OFFSET] = 6,
+                                            [7*4096 + OFFSET] = 7
+                                          } ;
 
 // Reference address and the guarding size
 int     size     __attribute__((aligned(64))) = REQUEST_SIZE - 1;
@@ -26,7 +35,7 @@ uint8_t secret[64];
 uint8_t state;
 
 // Spectre!
-static void fuck_up(int x)
+static void victim(int x)
 {
     if (x < size && x >= 0)
          state = array[nums[x]*4096 + OFFSET];
@@ -82,7 +91,7 @@ int main(int argc, char *argv[])
      * 'Main loop' - except for the fact that this server only works
      * with one client and then quits.
      */
-    printf("Started server on port %s, try to fuck me\n", argv[1]);
+    printf("Started server on port %s\n", argv[1]);
 
     int client = accept(sock, NULL, NULL);
     if (client < 0)
@@ -120,10 +129,10 @@ int serve(int client)
 
     // Do some extremely useful work
     for (int i = 0; i < size; i++)
-        fuck_up(requests[i]);
+        victim(requests[i]);
 
     _mm_clflush(&size);
-    fuck_up(requests[REQUEST_SIZE - 1]);
+    victim(requests[REQUEST_SIZE - 1]);
 
     // And return results
     ret = send(client, &state, sizeof(state), 0);
