@@ -13,7 +13,7 @@
 
 // Buffer to perform timing attack
 __attribute__((section(TARGET_SECTION), aligned(ARRSIZE)))
-    static const uint8_t array[ARRSIZE] = {'h', 'u', 'i',
+    static const uint8_t array[ARRSIZE] = {'d', 'a', 't', 'a',
                                             [0*4096 + OFFSET] = 0,
                                             [1*4096 + OFFSET] = 1,
                                             [2*4096 + OFFSET] = 2,
@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+	// Run server only on core 0
     int err = set_cpu(0);
     if (err < 0)
         return EXIT_FAILURE;
@@ -116,7 +117,7 @@ int serve(int client)
 {
     assert(client > 0);
 
-    // Just receiving 11 numbers to check them...
+    // Just receiving 11 numbers to check them... #todo why 11?
     int requests[REQUEST_SIZE];
     int ret = recv(client, requests, sizeof(requests), 0);
     if (ret < 0)

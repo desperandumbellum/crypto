@@ -33,7 +33,7 @@ static int attack(int victim, int slave, int offset);
 
 int main(int argc, char *argv[])
 {
-    // Some general shit
+    // Some general code
     if (argc != 2 && argc != 4)
     {
         fprintf(stderr, "Usage: %s port [from to]\n", argv[0]);

@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+	// Run attack on cpu 0 (the server is also running on it)
     err = set_cpu(0);
     if (err < 0)
         return EXIT_FAILURE;
@@ -63,7 +64,8 @@ int main(int argc, char *argv[])
         goto err_quit1;
     }
     printf("Master connected, starting\n");
-
+	
+	// Hit statistics processing, it makes results more stable and reproducible
     while (1)
     {
         uint8_t byte = 0;
@@ -119,6 +121,7 @@ static int read_byte(uint8_t *array, int runs, int master,
         send(master, &hits[0], sizeof(hits[0]), 0);
     }
 
+	// Define the winner as argmax{frequency}
     int winner = 0;
     for (int i = 0; i < 256; i++)
         if (hits[i] > hits[winner])

@@ -319,6 +319,7 @@ uint64_t calculate_threshold(int runs)
 
 uint64_t measure_access_time(uint8_t *target)
 {
+	// Measure access time to memory in CPU cycles
     assert(target);
 
     unsigned junk = 0;
