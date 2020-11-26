@@ -65,7 +65,8 @@ int main(int argc, char *argv[])
     }
     printf("Master connected, starting\n");
 	
-	// Hit statistics processing, it makes results more stable and reproducible
+	// Hit statistics processing, it makes results more stable and
+    // reproducible
     while (1)
     {
         uint8_t byte = 0;
@@ -80,7 +81,6 @@ int main(int argc, char *argv[])
         }
     }
 
-//err_quit2:
     close(master);
 err_quit1:
     close(sock);
