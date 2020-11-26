@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
     printf("size = %p, nums = %p, secret = %p\n", &size, &nums[0],
         &secret[0]);
 
-    // Some general shit
     if (argc < 2)
     {
         fprintf(stderr, "Usage: %s port\n", argv[0]);
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 256; i++)
         state &= array[i*4096 + OFFSET];
 
-    // The hook to make it all look serious
+    // The only addressing to the secret memory
     printf("Password, please: ");
     fgets((char*)secret, sizeof(secret), stdin);
 
@@ -117,7 +116,6 @@ int serve(int client)
 {
     assert(client > 0);
 
-    // Just receiving 11 numbers to check them... #todo why 11?
     int requests[REQUEST_SIZE];
     int ret = recv(client, requests, sizeof(requests), 0);
     if (ret < 0)
